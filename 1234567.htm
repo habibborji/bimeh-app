@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html><html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مدیریت اقساط بیمه</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      color: #555;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 8px;
+      width: 100%;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .installment {
+      background: #f9f9f9;
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #ddd;
+    }
+    .paid {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+    .installment button {
+      background-color: #2196F3;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>ثبت اطلاعات بیمه‌گذار</h2>
+    <label>نام مشتری</label>
+    <input type="text" id="name" /><label>نام بیمه</label>
+<input type="text" id="insurance" />
+
+<label>تاریخ قسط (شمسی)</label>
+<input type="text" id="date" class="datepicker" />
+
+<label>مبلغ قسط (تومان)</label>
+<input type="number" id="amount" />
+
+<button onclick="addInstallment()">افزودن قسط</button>
+
+<div id="installmentList"></div>
+
+  </div>  <!-- Firebase SDK -->  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCj9yah6gz0-403QoBhov52PQc8dJxyr1M",
+      authDomain: "bimeh-app.firebaseapp.com",
+      projectId: "bimeh-app",
+      storageBucket: "bimeh-app.firebasestorage.app",
+      messagingSenderId: "1017978733830",
+      appId: "1:1017978733830:web:54fdf86a996a483b5d0a87"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>  <script src="https://cdn.jsdelivr.net/npm/persian-date@1.0.6/dist/persian-date.min.js"></script>  <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>  <script>
+    $(document).ready(function () {
+      $('.datepicker').persianDatepicker({
+        format: 'YYYY/MM/DD',
+        initialValue: false,
+        autoClose: true
+      });
+      loadInstallments();
+    });
+
+    function addInstallment() {
+      const name = document.getElementById("name").value;
+      const insurance = document.getElementById("insurance").value;
+      const date = document.getElementById("date").value;
+      const amount = document.getElementById("amount").value;
+
+      if (!name || !insurance || !date || !amount) return alert("لطفاً همه فیلدها را پر کنید");
+
+      db.collection("installments").add({
+        name,
+        insurance,
+        date,
+        amount,
+        paid: false
+      }).then(() => {
+        alert("قسط با موفقیت ذخیره شد");
+        document.getElementById("name").value = "";
+        document.getElementById("insurance").value = "";
+        document.getElementById("date").value = "";
+        document.getElementById("amount").value = "";
+        loadInstallments();
+      });
+    }
+
+    function loadInstallments() {
+      const container = document.getElementById("installmentList");
+      container.innerHTML = "";
+      db.collection("installments").get().then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.className = "installment" + (data.paid ? " paid" : "");
+          div.innerHTML = `
+            <div>
+              <strong>${data.name}</strong> - ${data.insurance}<br>
+              تاریخ: ${data.date}<br>
+              مبلغ: ${data.amount} تومان
+            </div>
+            ${data.paid ? "" : `<button onclick="markPaid('${doc.id}')">وصول شد</button>`}
+          `;
+          container.appendChild(div);
+        });
+      });
+    }
+
+    function markPaid(id) {
+      db.collection("installments").doc(id).update({ paid: true }).then(() => {
+        loadInstallments();
+      });
+    }
+  </script></body>
+</html>
